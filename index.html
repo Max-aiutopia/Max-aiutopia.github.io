@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>簡淵文 Max｜AI 工作流程建置</title>
+<meta name="description" content="簡淵文（Max）：把 AI 工作流程寫成團隊自己跑得動的系統。自建 28 個 Claude Skill、7 支排程 Agent、357 個自動化腳本。">
+<meta property="og:title" content="簡淵文 Max｜AI 工作流程建置">
+<meta property="og:description" content="把 AI 寫成團隊自己跑得動的系統：Skill、排程 Agent、自動化腳本，再用數據追成效。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#F6F6F2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=block" rel="stylesheet">
+<style>
+:root{
+  --paper:#F6F6F2;
+  --paper-deep:#ECECE5;
+  --sheet:#FCFCFA;
+  --ink:#15171B;
+  --ink-2:#4B4F57;
+  --ink-3:#61656D;
+  --rule:#D5D5CC;
+  --hl:#E8F55A;
+  --board:#1C3930;
+  --board-2:#22443A;
+  --chalk:#ECF1EA;
+  --chalk-2:#A9C0B5;
+  --chalk-rule:rgba(236,241,234,.16);
+  --serif:"Noto Serif TC","Songti TC",serif;
+  --sans:"Noto Sans TC","PingFang TC",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Noto Sans TC",monospace;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --gutter:clamp(16px,4.2vw,56px);
+  --maxw:1240px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:80px;scrollbar-color:#BDBDB2 var(--paper)}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-size:17px;line-height:1.8;
+  word-break:keep-all;overflow-wrap:anywhere;line-break:strict;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+::selection{background:var(--hl);color:var(--ink)}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit;text-decoration-thickness:1px;text-underline-offset:.3em}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
+.board :focus-visible{outline-color:var(--hl)}
+h1,h2,h3{font-family:var(--serif);font-weight:900;letter-spacing:.01em;text-wrap:balance;margin:0}
+h2{font-size:clamp(1.85rem,1rem + 2.6vw,3rem);line-height:1.28;margin-bottom:.55em}
+h3{font-size:1.3rem;line-height:1.45}
+p{margin:0 0 1em}
+b,strong{font-weight:700}
+.nw{white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:var(--maxw);margin:0 auto;padding-inline:var(--gutter)}
+code{font-family:var(--mono);font-size:.88em;background:var(--paper-deep);padding:.1em .4em;border-radius:3px}
+
+/* ---------- 螢光筆：全站唯一的動態筆觸 ---------- */
+.mark{
+  background-image:linear-gradient(var(--hl),var(--hl));
+  background-repeat:no-repeat;background-position:0 86%;background-size:100% 44%;
+  -webkit-box-decoration-break:clone;box-decoration-break:clone;
+  padding:0 .06em;
+  transition:background-size 900ms var(--ease-out);
+}
+html.anim .mark:not(.on){background-size:0% 44%}
+html.shot .mark,html.drawn .mark{background-size:100% 44% !important;transition:none}
+
+/* ---------- 按鈕 ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.5em;
+  min-height:48px;padding:0 22px;border-radius:4px;border:1.5px solid var(--ink);
+  background:var(--ink);color:var(--paper);font:500 16px/1 var(--sans);letter-spacing:.02em;
+  text-decoration:none;cursor:pointer;white-space:nowrap;
+  transition:transform 160ms var(--ease-out),background-color 200ms ease,color 200ms ease;
+}
+.btn:active{transform:scale(.97)}
+.btn-ghost{background:transparent;color:var(--ink)}
+.btn-sm{min-height:38px;padding:0 14px;font-size:14px}
+.btn-hl{background:var(--hl);border-color:var(--hl);color:var(--ink)}
+@media (hover:hover) and (pointer:fine){
+  .btn:hover{background:#2B2E34}
+  .btn-ghost:hover{background:var(--paper-deep)}
+  .btn-hl:hover{background:#F1FA86}
+}
+
+/* ---------- 頂部 ---------- */
+.top{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:1px solid transparent;transition:border-color 200ms ease}
+.top.scrolled{border-bottom-color:var(--rule)}
+.top-in{display:flex;align-items:center;gap:28px;height:64px}
+.brand{font-family:var(--serif);font-weight:900;font-size:19px;letter-spacing:.04em;text-decoration:none;margin-right:auto;white-space:nowrap}
+.brand span{font-family:var(--sans);font-weight:500;font-size:14px;letter-spacing:.04em;color:var(--ink-2);margin-left:6px}
+.top nav{display:flex;gap:24px;font-size:15px}
+.top nav a{text-decoration:none;color:var(--ink-2);transition:color 200ms ease}
+@media (hover:hover) and (pointer:fine){.top nav a:hover{color:var(--ink)}}
+
+/* ---------- 開場 ---------- */
+.hero{
+  display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);
+  gap:clamp(32px,6vw,88px);align-items:center;
+  padding-top:clamp(40px,6vw,88px);padding-bottom:clamp(64px,8vw,120px);
+}
+.hero h1{font-size:clamp(2.45rem,1.2rem + 4.4vw,5.1rem);line-height:1.2;margin-bottom:.55em}
+.lede{font-size:clamp(1.06rem,1rem + .3vw,1.2rem);line-height:1.85;color:var(--ink);max-width:31em}
+.lede-2{color:var(--ink-2);max-width:31em}
+.lede-2 b{color:var(--ink)}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.portrait{margin:0}
+.portrait img{width:100%;aspect-ratio:4/5;object-fit:cover;object-position:44% 68%;border-radius:2px;background:var(--board)}
+.portrait figcaption{font-size:14px;line-height:1.7;color:var(--ink-3);margin-top:12px;padding-top:10px;border-top:1px solid var(--rule)}
+.portrait figcaption b{color:var(--ink);font-weight:700;margin-right:.6em}
+
+/* ---------- 做法 ---------- */
+.section{padding-block:clamp(72px,9vw,136px)}
+.how{border-top:1px solid var(--rule)}
+.steps{list-style:none;margin:clamp(28px,4vw,48px) 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(24px,3.5vw,56px)}
+.steps li{border-top:2px solid var(--ink);padding-top:20px}
+.steps .n{display:block;font-family:var(--serif);font-weight:900;font-size:clamp(2.6rem,1.6rem + 2.4vw,4rem);line-height:1;margin-bottom:18px;font-variant-numeric:lining-nums}
+.steps h3{font-size:1.4rem;margin-bottom:.5em}
+.steps p{color:var(--ink-2);margin:0}
+
+/* ---------- Skill 解剖 ---------- */
+.skill{background:var(--paper-deep);border-block:1px solid var(--rule)}
+.skill-head{max-width:46em}
+.skill-head p{color:var(--ink-2)}
+.skill-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(24px,4vw,64px);margin-top:clamp(28px,4vw,48px);align-items:start}
+.doc{background:var(--sheet);border:1px solid var(--rule);border-radius:3px;box-shadow:0 1px 0 rgba(21,23,27,.04),0 24px 48px -32px rgba(21,23,27,.28)}
+.doc-bar{display:flex;justify-content:space-between;gap:16px;padding:12px 20px;border-bottom:1px solid var(--rule);font:500 13px/1.4 var(--mono);color:var(--ink-3)}
+.doc-body{padding:clamp(16px,2.4vw,28px);font-family:var(--mono);font-size:14px;line-height:1.85;color:#2A2D33}
+.doc-body p{margin:0 0 .9em}
+.doc-body .fm{color:var(--ink-3);margin:0}
+.doc-body .fm + .ttl{margin-top:1em}
+.doc-body .ttl{font-weight:700;color:var(--ink)}
+.doc-body .gap{color:var(--ink-3);margin:1.2em 0}
+.doc-body b{color:var(--ink)}
+.rules{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13.5px;line-height:1.75;margin:0 0 1em}
+.rules th,.rules td{border:1px solid var(--rule);padding:8px 10px;text-align:left;vertical-align:top}
+.rules th{font-weight:700;background:var(--paper)}
+.rules col.c1{width:3.4em}
+.rules td:first-child{white-space:nowrap}
+.rules col.c3{width:36%}
+.pm{
+  background-color:transparent;color:inherit;
+  background-image:linear-gradient(var(--hl),var(--hl));background-repeat:no-repeat;background-size:0% 100%;
+  -webkit-box-decoration-break:clone;box-decoration-break:clone;
+  text-decoration:underline dotted rgba(21,23,27,.38);text-decoration-thickness:1px;text-underline-offset:.32em;
+  transition:background-size 520ms var(--ease-out),text-decoration-color 200ms ease;
+}
+.pm.on{background-size:100% 100%;text-decoration-color:transparent}
+html.shot .pm{transition:none}
+.anno{position:sticky;top:96px}
+.chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:22px;max-width:30em}
+.chip{
+  font:500 15px/1 var(--sans);letter-spacing:.02em;color:var(--ink);
+  min-height:44px;padding:0 12px;border-radius:999px;border:1.5px solid var(--ink);background:transparent;cursor:pointer;
+  transition:transform 160ms var(--ease-out),background-color 200ms ease;
+}
+.chip:active{transform:scale(.97)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+@media (hover:hover) and (pointer:fine){.chip[aria-pressed="false"]:hover{background:var(--sheet)}}
+.note{font-size:1.08rem;line-height:1.9;margin:0 0 1em;padding-left:18px;border-left:1px solid var(--ink)}
+.note b{display:block;font-family:var(--serif);font-weight:900;font-size:1.2rem;margin-bottom:.35em}
+html.js .note:not(.on){display:none}
+.anno .src{font-size:13.5px;color:var(--ink-3);margin-top:22px}
+
+/* ---------- 黑板：排程班表、聯絡 ---------- */
+.board{background:var(--board);color:var(--chalk)}
+.board ::selection{background:var(--hl);color:var(--ink)}
+.board-head{max-width:44em}
+.board-head p{color:var(--chalk-2)}
+.timetable{width:100%;border-collapse:collapse;margin-top:clamp(28px,4vw,48px)}
+.timetable thead th{font:500 13px/1.4 var(--sans);letter-spacing:.06em;color:var(--chalk-2);text-align:left;padding:0 16px 12px 0;border-bottom:1px solid var(--chalk-rule)}
+.timetable td{padding:22px 16px 22px 0;border-bottom:1px solid var(--chalk-rule);vertical-align:top}
+.timetable td:last-child{padding-right:0}
+.timetable .t{width:9.5em;white-space:nowrap}
+.clock{display:block;font-family:var(--serif);font-weight:600;font-size:1.65rem;line-height:1.1;color:var(--hl);font-variant-numeric:tabular-nums lining-nums;letter-spacing:.02em}
+.freq{display:block;font-size:14px;color:var(--chalk-2);margin-top:6px}
+.task b{display:block;font-family:var(--serif);font-weight:900;font-size:1.15rem;margin-bottom:.3em;color:var(--chalk)}
+.task span{color:#D3DED7}
+.guard{width:34%;color:#D3DED7}
+.guard::before{content:"不准";display:none}
+.board-foot{margin-top:28px;color:var(--chalk-2);font-size:15px}
+
+/* ---------- 案子 ---------- */
+.work h2{margin-bottom:.2em}
+.work-intro{color:var(--ink-2);max-width:40em;margin-bottom:clamp(20px,3vw,36px)}
+.case{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(20px,4vw,64px);padding-block:clamp(36px,5vw,64px);border-top:1px solid var(--rule)}
+.case:last-of-type{border-bottom:1px solid var(--rule)}
+.case .meta dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:15px;line-height:1.7}
+.case .meta dt{color:var(--ink-3)}
+.case .meta dd{margin:0}
+.case h3{font-size:clamp(1.45rem,1.1rem + 1vw,1.9rem);line-height:1.38;margin-bottom:.7em}
+.case .body > p{max-width:38em;color:var(--ink-2)}
+.case .body > p b{color:var(--ink)}
+.phase{width:100%;border-collapse:collapse;font-size:15px;line-height:1.7;margin:8px 0 24px}
+.phase th,.phase td{padding:10px 12px 10px 0;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+.phase thead th{font-family:var(--serif);font-weight:900;font-size:1.05rem;border-bottom:2px solid var(--ink)}
+.phase tbody th{font-weight:500;color:var(--ink-3);width:5.5em;white-space:nowrap}
+.pull{font-family:var(--serif);font-weight:900;font-size:clamp(1.3rem,1rem + 1vw,1.7rem);line-height:1.5;margin:28px 0 8px;padding:0}
+.pull-src{font-size:14px;color:var(--ink-3);margin-bottom:22px}
+.ledger{border-collapse:collapse;margin:8px 0 24px;min-width:min(100%,26em)}
+.ledger th,.ledger td{padding:10px 0;border-bottom:1px solid var(--rule);text-align:left}
+.ledger th{font-weight:400;color:var(--ink-2);padding-right:32px}
+.ledger td{text-align:right;font-family:var(--serif);font-weight:600;font-size:1.3rem;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+.seq{list-style:none;margin:10px 0 12px;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;max-width:34em}
+.seq li{position:relative;text-align:center;border:1.5px solid var(--ink);border-radius:3px;padding:10px 4px;font-weight:500;background:var(--sheet)}
+.seq li + li::before{content:"";position:absolute;right:100%;top:50%;width:18px;border-top:1.5px solid var(--ink)}
+.lines{list-style:none;margin:6px 0 22px;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:34em}
+.lines li{border:1px solid var(--rule);background:var(--sheet);border-radius:3px;padding:10px 12px;font-weight:500;font-size:15px;line-height:1.5}
+.ban{font-size:15px;color:var(--ink-2);margin-bottom:22px}
+.ban b{color:var(--ink);margin-right:.5em}
+.parts{list-style:none;margin:6px 0 22px;padding:0;max-width:38em}
+.parts li{display:grid;grid-template-columns:8.5em 1fr;gap:16px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.parts li:first-child{border-top:1px solid var(--rule)}
+.parts b{font-family:var(--serif);font-weight:900}
+.parts span{color:var(--ink-2)}
+.more{font-weight:500}
+
+/* ---------- 經歷 ---------- */
+.cv{padding-top:clamp(56px,6vw,88px)}
+.cv-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(32px,6vw,96px);margin-top:clamp(24px,3vw,40px);align-items:start}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{display:grid;grid-template-columns:10em minmax(0,1fr);gap:20px;padding:20px 0;border-top:1px solid var(--rule)}
+.timeline li:last-child{border-bottom:1px solid var(--rule)}
+.when{font-size:15px;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:3px}
+.timeline h3{font-size:1.15rem;line-height:1.5;margin-bottom:.3em}
+.timeline h3 small{display:block;font-family:var(--sans);font-weight:500;font-size:15px;color:var(--ink-2);letter-spacing:0;margin-top:2px}
+.timeline p{margin:0;color:var(--ink-2);font-size:16px}
+.cv-side .pull{margin-top:0}
+.cv-side h3{font-size:1.2rem;margin:40px 0 14px}
+.skills{margin:0}
+.skills div{padding:14px 0;border-top:1px solid var(--rule)}
+.skills div:last-child{border-bottom:1px solid var(--rule)}
+.skills dt{font-weight:700;margin-bottom:4px}
+.skills dd{margin:0;color:var(--ink-2);font-size:16px}
+
+/* ---------- 聯絡 ---------- */
+.contact h2{font-size:clamp(1.9rem,1rem + 3vw,3.4rem);line-height:1.35;max-width:17em;margin-bottom:.8em}
+.mail{display:flex;flex-wrap:wrap;align-items:center;gap:16px 24px}
+.mail-link{font-family:var(--serif);font-weight:600;font-size:clamp(1.45rem,1rem + 2.2vw,2.6rem);line-height:1.2;color:var(--chalk);text-decoration-color:var(--hl);text-decoration-thickness:2px;text-underline-offset:.22em;overflow-wrap:anywhere}
+.copy{min-width:9.5em}
+.copy[data-state="done"]{background:var(--chalk);border-color:var(--chalk)}
+.links{margin-top:28px;display:flex;flex-wrap:wrap;gap:12px 28px;font-size:16px}
+.links a{color:var(--chalk)}
+.foot{margin-top:clamp(64px,8vw,112px);padding-top:20px;border-top:1px solid var(--chalk-rule);display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 24px;font-size:14px;color:var(--chalk-2)}
+.foot p{margin:0}
+
+/* ---------- 響應式 ---------- */
+@media (max-width:1000px){
+  .skill-grid{grid-template-columns:minmax(0,1fr)}
+  .anno{position:static;order:-1}
+  .cv-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:860px){
+  .top nav{display:none}
+  .hero{grid-template-columns:minmax(0,1fr);gap:36px}
+  .portrait{max-width:520px}
+  .portrait img{aspect-ratio:4/3;object-position:44% 64%}
+  .steps{grid-template-columns:minmax(0,1fr);gap:36px}
+  .case{grid-template-columns:minmax(0,1fr);gap:18px}
+  .case .meta{order:2}
+  .case .body{order:1}
+  .timetable thead{display:none}
+  .timetable,.timetable tbody,.timetable tr,.timetable td{display:block;width:auto}
+  .timetable tr{padding:22px 0;border-bottom:1px solid var(--chalk-rule)}
+  .timetable td{border:0;padding:0}
+  .timetable .t{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+  .timetable .freq{margin:0}
+  .guard{margin-top:12px;padding-left:14px !important;border-left:1px solid var(--hl) !important}
+  .guard::before{display:block;font-size:13px;letter-spacing:.06em;color:var(--hl);margin-bottom:2px}
+}
+@media (max-width:560px){
+  body{font-size:16.5px}
+  .timeline li{grid-template-columns:minmax(0,1fr);gap:4px}
+  .parts li{grid-template-columns:minmax(0,1fr);gap:2px}
+  .seq{gap:12px}
+  .seq li + li::before{width:12px}
+  .cta .btn{flex:1 1 auto}
+  .rules{font-size:12.5px}
+  .rules th,.rules td{padding:6px 7px}
+  .doc-body{font-size:13px}
+}
+@media (max-width:640px){
+  .phase thead{display:none}
+  .phase,.phase tbody,.phase tr,.phase th,.phase td{display:block;width:auto}
+  .phase tr{padding:12px 0;border-bottom:1px solid var(--rule)}
+  .phase tr:first-child{border-top:2px solid var(--ink)}
+  .phase th,.phase td{border:0;padding:0}
+  .phase tbody th{width:auto;margin-bottom:4px;color:var(--ink);font-weight:700}
+  .phase td{display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:8px}
+  .phase td + td{margin-top:4px}
+  .phase td::before{content:attr(data-label);font-size:13px;color:var(--ink-3);padding-top:2px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .mark,.pm{transition:none}
+  .mark{background-size:100% 44% !important}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="brand" href="#top">簡淵文<span>Max</span></a>
+    <nav aria-label="頁內導覽">
+      <a href="#how">做法</a>
+      <a href="#skill">Skill</a>
+      <a href="#agents">排程</a>
+      <a href="#work">案子</a>
+      <a href="#cv">經歷</a>
+    </nav>
+    <a class="btn btn-sm" href="mailto:janemax13@gmail.com">寄信給我</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero wrap" aria-labelledby="hero-title">
+    <div class="hero-text">
+      <h1 id="hero-title">把 AI 寫成<br>團隊<span class="mark hl-hero">自己<br>跑得動</span>的系統</h1>
+      <p class="lede">我是簡淵文（Max）。我替團隊盤流程、選工具，把做法寫成 Skill 和排程 Agent。交給人或交給模型，照著跑都不會走樣，不用我在場。跑起來之後，再用數據看它有沒有效。</p>
+      <p class="lede-2">現在自己維運 <b class="nw"><span class="nw">28 個</span> Skill</b>（合計 <span class="nw">6,560 行</span>）、<b class="nw"><span class="nw">7 支</span>排程 Agent</b>、<b class="nw"><span class="nw">357 個</span>自動化腳本</b>，每天照排程在跑。</p>
+      <div class="cta">
+        <a class="btn" href="mailto:janemax13@gmail.com">寄信給我</a>
+        <a class="btn btn-ghost" href="#skill">看一個 Skill 長什麼樣</a>
+      </div>
+    </div>
+    <figure class="portrait">
+      <img src="images/headshot_color.jpg" width="900" height="1080" fetchpriority="high" alt="簡淵文，戴黑色反戴棒球帽、穿白色高領上衣，在戶外樹蔭下。">
+      <figcaption><b>簡淵文 Max</b>教了三年八個月的書，現在把工作寫成 AI 照得跑的規格。</figcaption>
+    </figure>
+  </section>
+
+  <section id="how" class="how section wrap" aria-labelledby="how-title">
+    <h2 id="how-title">我怎麼把一段工作交給 AI</h2>
+    <ol class="steps">
+      <li>
+        <span class="n" aria-hidden="true">1</span>
+        <h3>盤流程</h3>
+        <p>先訪談，看現有的人力和流程：哪幾段每週都在重複、哪幾段最常出錯，哪幾段適合自動化、哪幾段不適合。</p>
+      </li>
+      <li>
+        <span class="n" aria-hidden="true">2</span>
+        <h3>寫成 Skill</h3>
+        <p>把做法寫成規格：什麼情況觸發、照哪幾步走、做到哪裡才算完成、哪些事不准做，每一條都附理由。標準是交給不熟的人，或不夠聰明的模型照抄，也不會做錯。</p>
+      </li>
+      <li>
+        <span class="n" aria-hidden="true">3</span>
+        <h3>排進時間表</h3>
+        <p>能定時跑的交給排程 Agent，並寫死它的權限：能讀什麼、能寫什麼、哪些絕對不碰。跑起來以後看數據，決定下一輪要改哪一份規格。</p>
+      </li>
+    </ol>
+  </section>
+
+  <section id="skill" class="skill section" aria-labelledby="skill-title">
+    <div class="wrap">
+      <div class="skill-head">
+        <h2 id="skill-title">一個 Skill 長這樣</h2>
+        <p>這是我每天在用的生圖規格 <code>nano-banana-sop</code> 的開頭，全檔 <span class="nw">322 行</span>。文字照原檔，中間有刪節。點四個標籤，看每一段在防什麼。</p>
+      </div>
+      <div class="skill-grid">
+        <div class="doc" role="region" aria-label="nano-banana-sop 的 SKILL.md 原文節錄">
+          <div class="doc-bar"><span>nano-banana-sop/SKILL.md</span><span><span class="nw">322 行</span></span></div>
+          <div class="doc-body">
+            <p class="fm">---</p>
+            <p class="fm">name: nano-banana-sop</p>
+            <p class="fm"><mark class="pm" data-part="trigger">description: maxstudio 生圖唯一底層 SOP（Nano Banana／Gemini 3 image）。任何涉及「圖像生成、圖像編輯、生圖 prompt 撰寫」的任務都必須先讀本 skill 再動手——觸發詞包含但不限於：生圖、跑圖、出圖、做圖、修圖、改圖、P 圖、retouch、換背景、去背合成⋯</mark></p>
+            <p class="fm">---</p>
+            <p class="ttl"># Nano Banana 生圖 SOP v2｜maxstudio 影像生成作業系統（防呆版）</p>
+            <p><mark class="pm" data-part="steps"><b>用法</b>：從 STEP 0 走到 STEP 9，照抄，不跳步、不自由發揮。每個 STEP 有「完成判準」，沒達標不准進下一步。</mark></p>
+            <p><mark class="pm" data-part="end"><b>本 SOP 只有兩種合法結束方式</b>：<br>1. 交付通過 STEP 9 驗收的圖；<br>2. <b>停下來回報 Max</b>（點數超標／重生 <span class="nw">1 次</span>仍失敗／需求不明確，三者任一）。<br>沒有第三種。絕對不要「自己再多試幾次」。</mark></p>
+            <p class="gap">（中略）</p>
+            <table class="rules">
+              <colgroup><col class="c1"><col><col class="c3"></colgroup>
+              <thead><tr><th scope="col">#</th><th scope="col">鐵律</th><th scope="col">理由</th></tr></thead>
+              <tbody>
+                <tr><td>7</td><td>只要圖中有人臉，<b>必須</b>套 STEP 5 臉部協議全套（皮膚微觀＋negative constraints）</td><td><mark class="pm" data-part="rules">Nano Banana 預設會美顏，不壓就是塑膠皮膚</mark></td></tr>
+                <tr><td>9</td><td>給引擎的 prompt <b>必須</b>是英文敘事段落；<b>禁止</b>逗號關鍵字串、<b>禁止</b> 8k, ultra realistic, masterpiece 這類咒語</td><td><mark class="pm" data-part="rules">模型先讀懂再畫，敘事命中率最高；咒語詞反而觸發 AI 美學</mark></td></tr>
+                <tr><td>10</td><td>編輯任務（圖生圖）<b>必須</b>寫明「保留什麼」（<span class="nw">keep-list</span>）；一輪只改一件事</td><td><mark class="pm" data-part="rules">不寫保留清單，模型會整張重畫</mark></td></tr>
+              </tbody>
+            </table>
+            <p class="gap">（中略）</p>
+            <p class="ttl">## STEP 0｜任務分類（30 秒）</p>
+            <p>- <mark class="pm" data-part="steps"><b>完成判準</b>：能說出「這是 T_，走 STEP __」。</mark></p>
+          </div>
+        </div>
+        <div class="anno">
+          <div class="chips" role="group" aria-label="選一段看說明">
+            <button type="button" class="chip" data-part="trigger" aria-pressed="true">觸發條件</button>
+            <button type="button" class="chip" data-part="steps" aria-pressed="false">步驟與完成判準</button>
+            <button type="button" class="chip" data-part="end" aria-pressed="false">結束方式</button>
+            <button type="button" class="chip" data-part="rules" aria-pressed="false">鐵律與理由</button>
+          </div>
+          <div class="notes" aria-live="polite">
+            <p class="note on" data-part="trigger"><b>觸發條件</b>寫明哪些話會叫醒它。觸發詞列得夠廣，有人隨口說一句「幫我修圖」，也會走同一套規則，不會每個人各做各的。</p>
+            <p class="note" data-part="steps"><b>步驟與完成判準</b>每一步都寫了做到哪裡才算完成。沒達標不准往下走，擋掉「先做再說」。</p>
+            <p class="note" data-part="end"><b>結束方式</b>只准兩種結束：交出驗收過的圖，或停下來回報。明文寫死「不要自己再多試幾次」，這一條就是成本控制。</p>
+            <p class="note" data-part="rules"><b>鐵律與理由</b>每條鐵律都附理由。沒寫理由的規則，人跟模型都會想辦法繞過去。</p>
+          </div>
+          <p class="src">同一套寫法我做了 <span class="nw">28 個</span> Skill，涵蓋生圖、影片、文案、社群和內容拆解。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="agents" class="board section" aria-labelledby="agents-title">
+    <div class="wrap">
+      <div class="board-head">
+        <h2 id="agents-title"><span class="nw">7 支</span>排程 Agent，<br>每天照表上班</h2>
+        <p>每一支都寫了它要做什麼，也寫了它不准做什麼。</p>
+      </div>
+      <table class="timetable">
+        <caption class="sr"><span class="nw">7 支</span>排程 Agent 的時間、任務與不准做的事</caption>
+        <thead><tr><th scope="col">時間</th><th scope="col">任務</th><th scope="col">不准做的事</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="t"><span class="clock">09:00</span><span class="freq">每週一</span></td>
+            <td class="task"><b>AI 工具情報巡邏</b><span>抓官方部落格、YouTube 和模型清單，跟已看過的清單比對，寫成繁中週報。最後一段直接寫哪一份 SOP 要改哪一段、哪些不用動。<span class="nw">7 月</span>到現在寫了 <span class="nw">11 份</span>。</span></td>
+            <td class="guard">唯讀。只寫報告，不改任何 SOP，不呼叫會花錢的生成工具。</td>
+          </tr>
+          <tr>
+            <td class="t"><span class="clock">09:00</span><span class="freq">每天</span></td>
+            <td class="task"><b>收件匣整理</b><span>把電子報和促銷信封存，收件匣只留要本人處理的信。</span></td>
+            <td class="guard">只封存，不刪信、不寄信。判斷不準的一律留著。</td>
+          </tr>
+          <tr>
+            <td class="t"><span class="clock">09:00</span><span class="freq">每天</span></td>
+            <td class="task"><b>社群互動</b><span>在學習社群回覆貼文和新成員的自我介紹。</span></td>
+            <td class="guard">去重，同一則不回第二次；留言間隔 <span class="nw">3–5 分鐘</span>；當天跑過就不跑第二輪。</td>
+          </tr>
+          <tr>
+            <td class="t"><span class="clock">11:00</span><span class="freq">每天</span></td>
+            <td class="task"><b>成交錄影轉剪輯腳本</b><span>抓新的成交錄影，轉成逐字稿、分 A／B／C 級，A、B 級寫成剪輯腳本。</span></td>
+            <td class="guard">素材一律匿名，不出現公司、店名和人名。沒有新錄影就回報沒有，不硬找事做。</td>
+          </tr>
+          <tr>
+            <td class="t"><span class="clock">12:00</span><span class="freq"><span class="nw">每 3 天</span></span></td>
+            <td class="task"><b>廣告成效回報</b><span>從 Meta 拉活動、廣告組、廣告三層的成效，刷新客戶的成效檢視台。</span></td>
+            <td class="guard">唯讀連線，不改任何廣告設定，報告裡寫明沒動任何東西。</td>
+          </tr>
+          <tr>
+            <td class="t"><span class="clock">中午</span><span class="freq"><span class="nw">每 2 天</span></span></td>
+            <td class="task"><b>影片轉輪播</b><span>從選片池挑一支合格的影片，做成 IG 輪播圖卡和文案，交給我發。</span></td>
+            <td class="guard">圖卡只能用講者原話，一個字都不加。數字放慢重聽四次，對不上就不上卡。</td>
+          </tr>
+          <tr>
+            <td class="t"><span class="clock">週一</span><span class="freq">每週</span></td>
+            <td class="task"><b>檔案歸位</b><span>把下載資料夾裡新增的散檔，歸進固定的分類夾。</span></td>
+            <td class="guard">不開新資料夾。判斷不出來就放「待分類」，列出來問我。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="work" class="work section wrap" aria-labelledby="work-title">
+    <h2 id="work-title">做過的案子</h2>
+    <p class="work-intro">每個案子都寫了問題、做法和交付，有數字的放數字。</p>
+
+    <article class="case">
+      <div class="meta">
+        <dl>
+          <dt>客戶</dt><dd>易理商業顧問</dd>
+          <dt>類型</dt><dd>AI 自動化顧問</dd>
+          <dt>交付</dt><dd>兩階段建置計畫（Word、PDF）、demo 規劃</dd>
+        </dl>
+      </div>
+      <div class="body">
+        <h3>IG 帶貨帳號矩陣：先驗證，再收回自己手上</h3>
+        <p>客戶想做一組 IG 帶貨帳號，風險有兩個：模式還沒驗證就砸錢做重度開發；或是用外部工具跑起來，資料和客戶卻不在自己手上。</p>
+        <p>我先訪談現有人力與流程，盤點哪幾段適合自動化，再把商業風險和工程風險拆開，排成兩個階段：</p>
+        <table class="phase">
+          <thead><tr><th scope="col"><span class="sr">項目</span></th><th scope="col">第一階段：驗證</th><th scope="col">第二階段：自有</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">目標</th><td data-label="第一階段">用最低成本確認矩陣能不能帶來互動和導購</td><td data-label="第二階段">把資料、流程和客戶收回公司自有，再放大</td></tr>
+            <tr><th scope="row">規模</th><td data-label="第一階段"><span class="nw">3–5 個</span>測試帳號</td><td data-label="第二階段">照第一階段驗證出來的需求擴張</td></tr>
+            <tr><th scope="row">時程</th><td data-label="第一階段"><span class="nw">2–4 週</span></td><td data-label="第二階段"><span class="nw">1–3 個月</span>，逐步來</td></tr>
+            <tr><th scope="row">工具</th><td data-label="第一階段">Notion 當內容中台、Make 自動發布、AI 生圖與文案</td><td data-label="第二階段">自架 n8n、自有資料庫、客戶自己的 Meta App</td></tr>
+            <tr><th scope="row">軟體成本</th><td data-label="第一階段"><span class="nw">每月 NT$1,500–2,500</span></td><td data-label="第二階段">看規模</td></tr>
+          </tbody>
+        </table>
+        <p>內容流程穩定運作、而且出現可以量化的成效，才進第二階段。</p>
+        <blockquote class="pull">數據不成立，就不浪費錢往下蓋。</blockquote>
+        <p class="pull-src">提案書原文</p>
+        <p>提案書第一段也寫明：所有 IG 帳號、Meta 開發者 App、資料庫和 AI 素材，一律開在客戶公司名下。我是建置和操作的人，不是持有的人。</p>
+      </div>
+    </article>
+
+    <article class="case">
+      <div class="meta">
+        <dl>
+          <dt>客戶</dt><dd>B2B 教育品牌（到職擔任內容規劃師）</dd>
+          <dt>期間</dt><dd>2026/08–09</dd>
+          <dt>類型</dt><dd>內容產線設計、數據判讀</dd>
+        </dl>
+      </div>
+      <div class="body">
+        <h3>教育品牌的內容產線：一個月 <span class="nw">300 支</span></h3>
+        <p>這份工作的目標，是用內容把能成交的客戶帶進來。一個月要出 <span class="nw">300 支</span>素材，但 <span class="nw">300 支</span>不等於 <span class="nw">300 個</span>點子。我把產線設計成：<span class="nw">60–80 個</span>點子，換不同的鉤子、格式、長度和廣告變體，做成 <span class="nw">300 個</span>成品。</p>
+        <ul class="lines" aria-label="六條素材線">
+          <li>輪播貼文</li><li>廣告貼文</li><li>QA 問答</li><li>陪跑素材</li><li>UGC</li><li>成交素材</li>
+        </ul>
+        <p>六條線的用途完全不同，所以規範分開寫，每一條都寫明「適用什麼」和「不適用什麼」。最常出錯的，就是把某一條線的規則套到另一條線上。</p>
+        <p>我也把品牌 IG 帳號 <span class="nw">90 天</span>的影片數據全部拆開看：<span class="nw">52 支</span>正片裡，跟觀看數相關性最強的是平均觀看秒數（<span class="nw">+0.49</span>）。「自然流量看觀看時長，不看觀看數」這條規則，就是用這份數據佐證的。</p>
+        <p>重複的步驟交給排程 Agent，上面班表裡的「成交錄影轉剪輯腳本」和「影片轉輪播」，就是這個案子做的。作業流程寫成 SOP 和 Skill，交給其他部門和學員自己用；專案結束時，交出一份完整的交接手冊。</p>
+      </div>
+    </article>
+
+    <article class="case">
+      <div class="meta">
+        <dl>
+          <dt>範圍</dt><dd><span class="nw">4 個</span>電商廣告帳號（生鮮、保健、香氛、服飾）</dd>
+          <dt>類型</dt><dd>廣告素材產線、成效追蹤</dd>
+        </dl>
+      </div>
+      <div class="body">
+        <h3>電商廣告：從素材產線到成效資料庫</h3>
+        <p>一個人同時接 <span class="nw">4 個</span>電商帳號，每個案子的規則都不一樣：產品外觀要鎖死、成本有上限、文案有禁區。靠記憶一定出錯，靠口頭交代沒辦法交接，所以每條產線都寫成 Skill。還在投放的帳號，成效由排程 Agent <span class="nw">每 3 天</span>拉回檢視台。</p>
+        <table class="ledger">
+          <tbody>
+            <tr><th scope="row">累計操作廣告金額</th><td>NT$264,953</td></tr>
+            <tr><th scope="row">整體 ROAS</th><td>2.43</td></tr>
+            <tr><th scope="row">歸因購買</th><td><span class="nw">394 筆</span></td></tr>
+            <tr><th scope="row">曝光</th><td><span class="nw">856,156 次</span></td></tr>
+          </tbody>
+        </table>
+        <p>逐支素材的成效、文案和圖檔都建成可以查的資料庫。失敗的案子也留著，連同它在哪一段掉下來、為什麼。</p>
+      </div>
+    </article>
+
+    <article class="case">
+      <div class="meta">
+        <dl>
+          <dt>客戶</dt><dd>國內大型金融機構（透過合作方）</dd>
+          <dt>類型</dt><dd>AI 影片批次製作</dd>
+          <dt>交付</dt><dd><span class="nw">39 支</span>成品、<span class="nw">14 支</span>綠幕交付版、兩套規格文件、批次腳本</dd>
+        </dl>
+      </div>
+      <div class="body">
+        <h3>39 位員工的人物影片，一個人批次做完</h3>
+        <p>客戶需要 39 位主管與員工、統一規格的人物影片。照傳統做法要租棚、排 <span class="nw">39 個人</span>的檔期，時間和成本都不可行。我先把每個動作寫死成規格：</p>
+        <ol class="seq" aria-label="動作規格">
+          <li>進場</li><li>定位</li><li>抱胸</li><li>定格</li>
+        </ol>
+        <p class="ban"><b>不准</b>點頭、歪頭、說話、多餘手勢</p>
+        <p>再調出能批次去背的綠幕規格（純色、沒有漸層、沒有陰影、沒有地面），用批次腳本跑生成佇列，不是一支一支手動做。半身版、全身版各一套規格。這是回頭客的案子。</p>
+      </div>
+    </article>
+
+    <article class="case">
+      <div class="meta">
+        <dl>
+          <dt>類型</dt><dd>Workshop 教材</dd>
+          <dt>對象</dt><dd>零基礎</dd>
+        </dl>
+      </div>
+      <div class="body">
+        <h3>《<span class="nw">20 分鐘</span>做一個月廣告素材》</h3>
+        <p>目標是學員當場做得出來。所以我刻意不教自己實際在用的那套（成本更低，但門檻高），改走最好複製的路線：規則在 ChatGPT 的 Project 裡設定一次，之後換產品只要上傳 <span class="nw">1 張</span>圖、貼 3 段提示詞。這個取捨也寫進教材裡。</p>
+        <ul class="parts">
+          <li><b><span class="nw">14 頁</span>簡報</b><span>上台講邏輯：為什麼 <span class="nw">1 個</span>產品、<span class="nw">3 個</span>切角、每個切角 <span class="nw">10 張</span>，就是一個月的素材量。</span></li>
+          <li><b>零基礎長講義</b><span>照著做就好，完整的提示詞都可以直接複製。</span></li>
+          <li><b><span class="nw">2 頁</span> A4 速查卡</b><span>印出來放桌上，課後自己重跑一次，不必重看影片。</span></li>
+        </ul>
+        <p>簡報本身是用程式（pptxgenjs）產生的，換一個主題就能再產一套。另一份 <span class="nw">17 頁</span>的 Higgsfield 繁中教學簡報，也是同一條流程做出來的。</p>
+      </div>
+    </article>
+
+    <article class="case">
+      <div class="meta">
+        <dl>
+          <dt>帳號</dt><dd>@maxstudio.biz</dd>
+          <dt>期間</dt><dd>2026/03–05</dd>
+        </dl>
+      </div>
+      <div class="body">
+        <h3>自己的 IG：兩個月 <span class="nw">600 → 10,000</span> 粉</h3>
+        <p>每天約 <span class="nw">1 支</span>影片加 <span class="nw">3 篇</span>貼文。先找同受眾、結構能複製的高觀看影片，逐秒標出開場鉤子、鏡位、切點、字卡和配樂，寫成 format 規格，再照規格批次重做。代表作觀看 <span class="nw">60.3 萬</span>、<span class="nw">35.5 萬</span>、<span class="nw">10.9 萬</span>。</p>
+        <p><a class="more" href="https://www.instagram.com/maxstudio.biz/" target="_blank" rel="noopener">去 IG 看這個帳號</a></p>
+      </div>
+    </article>
+  </section>
+
+  <section id="cv" class="cv section wrap" aria-labelledby="cv-title">
+    <h2 id="cv-title">經歷</h2>
+    <div class="cv-grid">
+      <ol class="timeline" reversed>
+        <li>
+          <span class="when">2026/03 – 現在</span>
+          <div><h3>maxstudio.biz<small>創辦人・AI 工作流程建置</small></h3>
+          <p>自建 Skill 與排程 Agent，串接 Higgsfield、Meta Ads、Gmail、Notion，把「生成、交付、上雲、回報成效」接成一條線。</p></div>
+        </li>
+        <li>
+          <span class="when">2026/08 – 2026/09</span>
+          <div><h3>頭家校院<small>內容規劃師（短期專案）</small></h3>
+          <p>設計月產 <span class="nw">300 支</span>素材的內容產線，拆成六條規範各自獨立的素材線。拆解 IG 帳號 <span class="nw">90 天</span>的影片數據，據此改寫每週的選題配比。</p></div>
+        </li>
+        <li>
+          <span class="when">2026/02 – 2026/06</span>
+          <div><h3>曙光教育事業機構<small>教學與教材開發</small></h3>
+          <p>接手 <span class="nw">7 人</span>小班，學員從不及格<wbr>進步到<span class="nw">段考平均約 80 分。</span></p></div>
+        </li>
+        <li>
+          <span class="when">2024/09 – 2025/12</span>
+          <div><h3>中華民國國軍<small>自願役</small></h3>
+          <p>參與單位文宣與節日影片製作。</p></div>
+        </li>
+        <li>
+          <span class="when">2020/09 – 2022/06</span>
+          <div><h3>明光義塾<small>個別指導老師</small></h3>
+          <p>國一到高三的數學與理化，一對一到一對三。每位學生各自備課、各自排進度。</p></div>
+        </li>
+        <li>
+          <span class="when">2018/09 – 2020/06</span>
+          <div><h3>亞一文理短期補習班<small>補習班導師</small></h3>
+          <p>國中數理授課與課後個別輔導。</p></div>
+        </li>
+      </ol>
+      <aside class="cv-side" aria-label="補充">
+        <blockquote class="pull">教書跟做顧問<wbr>是同一件事：<wbr>把一個東西<wbr>拆到對方<wbr>能吸收的顆粒，<wbr><span class="nw">然後看反應調整。</span></blockquote>
+        <h3>會用的工具</h3>
+        <dl class="skills">
+          <div><dt>顧問</dt><dd>需求訪談與流程盤點、AI 工具選型與成本估算、SOP 文件化與交接、成效追蹤</dd></div>
+          <div><dt>技術</dt><dd>Claude Code（Skill、Subagent、排程 Agent）、MCP 串接、Prompt 與 Context Engineering、Python、JavaScript、Bash、API 串接</dd></div>
+          <div><dt>內容</dt><dd>教材設計與現場帶領、簡報產製自動化、短影音企劃、Meta 廣告素材與文案、GA4 數據判讀</dd></div>
+        </dl>
+      </aside>
+    </div>
+  </section>
+
+  <section id="contact" class="board contact section" aria-labelledby="contact-title">
+    <div class="wrap">
+      <h2 id="contact-title">在找能把 AI 導進團隊的人，或有一段流程想<span class="nw">交給 AI 跑</span>，寫信給我。</h2>
+      <div class="mail">
+        <a class="mail-link" href="mailto:janemax13@gmail.com">janemax13@gmail.com</a>
+        <button type="button" class="btn btn-hl copy" data-copy="janemax13@gmail.com">複製 Email</button>
+      </div>
+      <p class="links"><a href="https://www.instagram.com/maxstudio.biz/" target="_blank" rel="noopener">IG @maxstudio.biz</a></p>
+      <footer class="foot">
+        <p>© 2026 簡淵文 Max</p>
+        <p>這個網站是我用 Claude Code 做的。</p>
+      </footer>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  root.classList.add('js');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 捲動後頂部加一條細線
+  var top = document.querySelector('.top');
+  function onScroll() { top.classList.toggle('scrolled', window.scrollY > 8); }
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+
+  // 開場：螢光筆畫過「自己跑得動」，只畫一次
+  if (!reduce && !root.classList.contains('shot')) {
+    root.classList.add('anim');
+    var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    ready.then(function () {
+      setTimeout(function () {
+        document.querySelectorAll('.hl-hero').forEach(function (m) { m.classList.add('on'); });
+        // 保險：萬一瀏覽器沒跑轉場（背景分頁、省電模式），1.3 秒後直接定格在畫滿
+        setTimeout(function () { root.classList.remove('anim'); root.classList.add('drawn'); }, 1300);
+      }, 250);
+    });
+  }
+
+  // Skill 解剖：點標籤，螢光筆畫過對應段落、換旁註
+  var chips = [].slice.call(document.querySelectorAll('.chip'));
+  var marks = [].slice.call(document.querySelectorAll('.pm'));
+  var notes = [].slice.call(document.querySelectorAll('.note'));
+  function select(part) {
+    chips.forEach(function (c) { c.setAttribute('aria-pressed', String(c.dataset.part === part)); });
+    marks.forEach(function (m) { m.classList.toggle('on', m.dataset.part === part); });
+    notes.forEach(function (n) { n.classList.toggle('on', n.dataset.part === part); });
+  }
+  chips.forEach(function (c) { c.addEventListener('click', function () { select(c.dataset.part); }); });
+  select('trigger');
+
+  // 複製 Email
+  var copyBtn = document.querySelector('.copy');
+  if (copyBtn) {
+    var label = copyBtn.textContent;
+    copyBtn.addEventListener('click', function () {
+      var text = copyBtn.dataset.copy;
+      var done = function () {
+        copyBtn.textContent = '已複製';
+        copyBtn.dataset.state = 'done';
+        setTimeout(function () { copyBtn.textContent = label; copyBtn.dataset.state = ''; }, 1600);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, function () { window.location.href = 'mailto:' + text; });
+      } else {
+        var t = document.createElement('textarea');
+        t.value = text; t.setAttribute('readonly', ''); t.style.position = 'fixed'; t.style.opacity = '0';
+        document.body.appendChild(t); t.select();
+        try { document.execCommand('copy'); done(); } catch (e) { window.location.href = 'mailto:' + text; }
+        document.body.removeChild(t);
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
